@@ -4,14 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sun Hut - Book Your Tan</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Use more reliable CDN - cdnjs.cloudflare.com -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
         body { 
             margin: 0; 
@@ -19,20 +25,17 @@
             background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
         }
         
-        /* Sun Hut Theme Colors */
         .sun-hut-orange { background-color: #FF6B35; }
         .sun-hut-yellow { background-color: #FFD700; }
         .sun-hut-text-orange { color: #FF6B35; }
         .sun-hut-border-orange { border-color: #FF6B35; }
         
-        /* Tropical Pattern Background */
         .tropical-bg {
             background-image: 
                 radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(255, 107, 53, 0.1) 0%, transparent 50%);
         }
         
-        /* Loading Spinner */
         .spinner {
             border: 3px solid #FED7AA;
             border-top-color: #FF6B35;
@@ -40,34 +43,39 @@
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
+            margin: 20px auto;
         }
         
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        #loading-status {
+            text-align: center;
+            padding: 50px 20px;
+            font-size: 18px;
+            color: #FF6B35;
         }
         
-        ::-webkit-scrollbar-track {
-            background: #FED7AA;
+        .error-message {
+            background: #fee;
+            border: 2px solid #f00;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+            color: #c00;
         }
         
-        ::-webkit-scrollbar-thumb {
-            background: #FF6B35;
-            border-radius: 4px;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #FED7AA; }
+        ::-webkit-scrollbar-thumb { background: #FF6B35; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #E55A2B; }
         
-        ::-webkit-scrollbar-thumb:hover {
-            background: #E55A2B;
-        }
-        
-        /* Button Hover Effects */
         .btn-orange {
             background-color: #FF6B35;
             transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
         }
         
         .btn-orange:hover {
@@ -80,6 +88,8 @@
             background-color: #FFD700;
             color: #1F2937;
             transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
         }
         
         .btn-yellow:hover {
@@ -88,7 +98,6 @@
             box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
         }
         
-        /* Card Styles */
         .card {
             background: white;
             border-radius: 12px;
@@ -100,18 +109,20 @@
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
         }
         
-        /* Input Focus Styles */
         input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #FF6B35;
             box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
         }
         
-        /* Time Slot Styles */
         .time-slot {
             cursor: pointer;
             transition: all 0.2s ease;
             border: 2px solid #E5E7EB;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
         }
         
         .time-slot:hover {
@@ -132,877 +143,921 @@
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div id="loading-status">
+            <div class="spinner"></div>
+            <p>Loading Sun Hut Booking System...</p>
+            <p style="font-size: 14px; color: #666;">Please wait while we load the application...</p>
+        </div>
+    </div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCRiybLgwke4e38h72ElcvD5Fo_uS3eyQM",
-            authDomain: "tanningsalon-b67a2.firebaseapp.com",
-            projectId: "tanningsalon-b67a2",
-            storageBucket: "tanningsalon-b67a2.firebasestorage.app",
-            messagingSenderId: "407378831723",
-            appId: "1:407378831723:web:2642c751f4c7c90b37042e"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-
-        // Main App Component
-        function BookingWidget() {
-            const [user, setUser] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [view, setView] = useState('login'); // login, register, booking, myAppointments
-            const [resources, setResources] = useState([]);
-            const [services, setServices] = useState([]);
-            const [appointments, setAppointments] = useState([]);
-            const [clients, setClients] = useState([]);
-
-            // Listen for authentication state changes
-            useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
-                    if (authUser) {
-                        // Check if user is verified
-                        if (authUser.emailVerified) {
-                            setUser(authUser);
-                            setView('booking');
-                            await loadData();
-                        } else {
-                            setUser(authUser);
-                            setView('verifyEmail');
-                        }
-                    } else {
-                        setUser(null);
-                        setView('login');
-                    }
-                    setLoading(false);
-                });
-
-                return () => unsubscribe();
-            }, []);
-
-            // Load data from Firebase
-            const loadData = async () => {
-                try {
-                    const [resourcesSnap, servicesSnap, appointmentsSnap, clientsSnap] = await Promise.all([
-                        db.collection('resources').get(),
-                        db.collection('services').get(),
-                        db.collection('appointments').get(),
-                        db.collection('clients').get()
-                    ]);
-
-                    setResources(resourcesSnap.docs.map(doc => ({ ...doc.data() })));
-                    setServices(servicesSnap.docs.map(doc => ({ ...doc.data() })));
-                    setAppointments(appointmentsSnap.docs.map(doc => ({ ...doc.data() })));
-                    setClients(clientsSnap.docs.map(doc => ({ ...doc.data() })));
-                } catch (error) {
-                    console.error('Error loading data:', error);
+        // Wait for all dependencies to load
+        (function() {
+            const loadingStatus = document.getElementById('loading-status');
+            
+            // Check if all dependencies loaded
+            function checkDependencies() {
+                if (typeof React === 'undefined') {
+                    loadingStatus.innerHTML = '<div class="error-message"><h2>Error Loading React</h2><p>The React library failed to load. This might be due to network issues or browser extensions blocking scripts.</p><p>Please try:</p><ul style="text-align: left;"><li>Refreshing the page</li><li>Disabling ad blockers</li><li>Checking your internet connection</li></ul></div>';
+                    return false;
                 }
-            };
-
-            if (loading) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center tropical-bg">
-                        <div className="text-center">
-                            <div className="spinner mx-auto mb-4"></div>
-                            <p className="text-gray-600 text-lg">Loading Sun Hut Booking...</p>
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="min-h-screen tropical-bg p-4">
-                    <Header user={user} setView={setView} />
-                    
-                    {view === 'login' && <LoginForm setView={setView} />}
-                    {view === 'register' && <RegisterForm setView={setView} />}
-                    {view === 'verifyEmail' && <VerifyEmail user={user} />}
-                    {view === 'booking' && (
-                        <BookingForm 
-                            resources={resources} 
-                            services={services} 
-                            appointments={appointments}
-                            user={user}
-                            clients={clients}
-                            onBookingComplete={loadData}
-                        />
-                    )}
-                    {view === 'myAppointments' && (
-                        <MyAppointments 
-                            appointments={appointments}
-                            resources={resources}
-                            services={services}
-                            user={user}
-                            clients={clients}
-                            onUpdate={loadData}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        // Header Component
-        function Header({ user, setView }) {
-            const handleLogout = async () => {
-                await auth.signOut();
-            };
-
-            return (
-                <div className="card p-4 mb-6 max-w-6xl mx-auto">
-                    <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="text-4xl font-bold sun-hut-text-orange">
-                                🌴 THE SUN HUT
-                            </div>
-                        </div>
-                        
-                        {user && user.emailVerified && (
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setView('booking')}
-                                    className="px-6 py-2 btn-yellow rounded-lg font-semibold"
-                                >
-                                    Book Now
-                                </button>
-                                <button
-                                    onClick={() => setView('myAppointments')}
-                                    className="px-6 py-2 btn-orange text-white rounded-lg font-semibold"
-                                >
-                                    My Appointments
-                                </button>
-                                <button
-                                    onClick={handleLogout}
-                                    className="px-6 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700"
-                                >
-                                    Logout
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        // Login Form Component
-        function LoginForm({ setView }) {
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
-            const [loading, setLoading] = useState(false);
-
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setError('');
-                setLoading(true);
-
-                try {
-                    await auth.signInWithEmailAndPassword(email, password);
-                } catch (error) {
-                    setError(error.message);
+                if (typeof ReactDOM === 'undefined') {
+                    loadingStatus.innerHTML = '<div class="error-message"><h2>Error Loading ReactDOM</h2><p>The ReactDOM library failed to load.</p></div>';
+                    return false;
                 }
-                
-                setLoading(false);
-            };
-
-            return (
-                <div className="max-w-md mx-auto">
-                    <div className="card p-8">
-                        <h2 className="text-3xl font-bold sun-hut-text-orange mb-6 text-center">
-                            Welcome Back! ☀️
-                        </h2>
-                        
-                        {error && (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                                {error}
-                            </div>
-                        )}
-                        
-                        <form onSubmit={handleLogin}>
-                            <div className="mb-4">
-                                <label className="block text-gray-700 font-semibold mb-2">Email</label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                    required
-                                />
-                            </div>
-                            
-                            <div className="mb-6">
-                                <label className="block text-gray-700 font-semibold mb-2">Password</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                    required
-                                />
-                            </div>
-                            
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full btn-orange text-white px-6 py-3 rounded-lg font-bold text-lg"
-                            >
-                                {loading ? 'Logging in...' : 'Login'}
-                            </button>
-                        </form>
-                        
-                        <div className="mt-6 text-center">
-                            <p className="text-gray-600">
-                                Don't have an account?{' '}
-                                <button
-                                    onClick={() => setView('register')}
-                                    className="sun-hut-text-orange font-semibold hover:underline"
-                                >
-                                    Register Here
-                                </button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // Register Form Component
-        function RegisterForm({ setView }) {
-            const [formData, setFormData] = useState({
-                firstName: '',
-                surname: '',
-                email: '',
-                password: '',
-                confirmPassword: '',
-                phone: '',
-                dateOfBirth: ''
-            });
-            const [error, setError] = useState('');
-            const [loading, setLoading] = useState(false);
-
-            const handleChange = (e) => {
-                setFormData({ ...formData, [e.target.name]: e.target.value });
-            };
-
-            const handleRegister = async (e) => {
-                e.preventDefault();
-                setError('');
-                
-                // Validation
-                if (formData.password !== formData.confirmPassword) {
-                    setError('Passwords do not match!');
-                    return;
+                if (typeof firebase === 'undefined') {
+                    loadingStatus.innerHTML = '<div class="error-message"><h2>Error Loading Firebase</h2><p>The Firebase library failed to load.</p></div>';
+                    return false;
                 }
-                
-                if (formData.password.length < 6) {
-                    setError('Password must be at least 6 characters!');
-                    return;
-                }
-                
-                setLoading(true);
-
-                try {
-                    // Create Firebase Auth user
-                    const userCredential = await auth.createUserWithEmailAndPassword(
-                        formData.email,
-                        formData.password
-                    );
-                    
-                    // Send email verification
-                    await userCredential.user.sendEmailVerification();
-                    
-                    // Create client record in Firestore
-                    const newClient = {
-                        id: Date.now(),
-                        firstName: formData.firstName,
-                        surname: formData.surname,
-                        name: `${formData.firstName} ${formData.surname}`,
-                        email: formData.email,
-                        phone: formData.phone,
-                        dateOfBirth: formData.dateOfBirth,
-                        idVerified: false,
-                        skinType: 'Not Set',
-                        disclaimerCompleted: false,
-                        notes: '',
-                        totalVisits: 0,
-                        totalSpent: 0,
-                        redFlag: false,
-                        redFlagNote: '',
-                        redFlagDate: '',
-                        bookingSource: 'online-widget',
-                        firebaseUid: userCredential.user.uid
-                    };
-                    
-                    await db.collection('clients').doc(newClient.id.toString()).set(newClient);
-                    
-                    // User will be redirected to verify email screen
-                } catch (error) {
-                    setError(error.message);
-                    setLoading(false);
-                }
-            };
-
-            return (
-                <div className="max-w-md mx-auto">
-                    <div className="card p-8">
-                        <h2 className="text-3xl font-bold sun-hut-text-orange mb-6 text-center">
-                            Join Sun Hut! 🌴
-                        </h2>
-                        
-                        {error && (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                                {error}
-                            </div>
-                        )}
-                        
-                        <form onSubmit={handleRegister}>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label className="block text-gray-700 font-semibold mb-2">First Name</label>
-                                    <input
-                                        type="text"
-                                        name="firstName"
-                                        value={formData.firstName}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-700 font-semibold mb-2">Surname</label>
-                                    <input
-                                        type="text"
-                                        name="surname"
-                                        value={formData.surname}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div className="mb-4">
-                                <label className="block text-gray-700 font-semibold mb-2">Email</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                    required
-                                />
-                            </div>
-                            
-                            <div className="mb-4">
-                                <label className="block text-gray-700 font-semibold mb-2">Phone</label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                    required
-                                />
-                            </div>
-                            
-                            <div className="mb-4">
-                                <label className="block text-gray-700 font-semibold mb-2">Date of Birth</label>
-                                <input
-                                    type="date"
-                                    name="dateOfBirth"
-                                    value={formData.dateOfBirth}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                    required
-                                />
-                            </div>
-                            
-                            <div className="mb-4">
-                                <label className="block text-gray-700 font-semibold mb-2">Password</label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                    required
-                                />
-                            </div>
-                            
-                            <div className="mb-6">
-                                <label className="block text-gray-700 font-semibold mb-2">Confirm Password</label>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                    required
-                                />
-                            </div>
-                            
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full btn-orange text-white px-6 py-3 rounded-lg font-bold text-lg"
-                            >
-                                {loading ? 'Creating Account...' : 'Create Account'}
-                            </button>
-                        </form>
-                        
-                        <div className="mt-6 text-center">
-                            <p className="text-gray-600">
-                                Already have an account?{' '}
-                                <button
-                                    onClick={() => setView('login')}
-                                    className="sun-hut-text-orange font-semibold hover:underline"
-                                >
-                                    Login Here
-                                </button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // Verify Email Component
-        function VerifyEmail({ user }) {
-            const [checking, setChecking] = useState(false);
-
-            const checkVerification = async () => {
-                setChecking(true);
-                await user.reload();
-                setChecking(false);
-                
-                if (!user.emailVerified) {
-                    alert('Please verify your email first. Check your inbox!');
-                }
-            };
-
-            const resendEmail = async () => {
-                try {
-                    await user.sendEmailVerification();
-                    alert('Verification email sent! Please check your inbox.');
-                } catch (error) {
-                    alert('Error sending email: ' + error.message);
-                }
-            };
-
-            return (
-                <div className="max-w-md mx-auto">
-                    <div className="card p-8 text-center">
-                        <div className="text-6xl mb-4">📧</div>
-                        <h2 className="text-3xl font-bold sun-hut-text-orange mb-4">
-                            Verify Your Email
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            We've sent a verification email to:<br/>
-                            <strong>{user.email}</strong>
-                        </p>
-                        <p className="text-gray-600 mb-6">
-                            Please check your inbox and click the verification link to continue.
-                        </p>
-                        
-                        <button
-                            onClick={checkVerification}
-                            disabled={checking}
-                            className="w-full btn-orange text-white px-6 py-3 rounded-lg font-bold text-lg mb-3"
-                        >
-                            {checking ? 'Checking...' : 'I\'ve Verified My Email'}
-                        </button>
-                        
-                        <button
-                            onClick={resendEmail}
-                            className="w-full btn-yellow px-6 py-3 rounded-lg font-bold text-lg"
-                        >
-                            Resend Verification Email
-                        </button>
-                    </div>
-                </div>
-            );
-        }
-
-        // Booking Form Component
-        function BookingForm({ resources, services, appointments, user, clients, onBookingComplete }) {
-            const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-            const [selectedResource, setSelectedResource] = useState(null);
-            const [selectedService, setSelectedService] = useState(null);
-            const [selectedTime, setSelectedTime] = useState(null);
-            const [notes, setNotes] = useState('');
-            const [loading, setLoading] = useState(false);
-
-            // Generate time slots (15-minute intervals from 9 AM to 9 PM)
-            const generateTimeSlots = () => {
-                const slots = [];
-                for (let hour = 9; hour < 21; hour++) {
-                    for (let minute = 0; minute < 60; minute += 15) {
-                        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                        slots.push(time);
-                    }
-                }
-                return slots;
-            };
-
-            const timeSlots = generateTimeSlots();
-
-            // Check if a time slot is available
-            const isTimeSlotAvailable = (time) => {
-                if (!selectedResource) return false;
-                
-                const [hours, minutes] = time.split(':').map(Number);
-                const slotStart = hours * 60 + minutes;
-                const slotEnd = slotStart + (selectedService?.duration || 15);
-
-                const dateAppointments = appointments.filter(
-                    apt => apt.date === selectedDate && apt.resourceId === selectedResource.id
-                );
-
-                for (const apt of dateAppointments) {
-                    const [aptHours, aptMinutes] = apt.startTime.split(':').map(Number);
-                    const aptStart = aptHours * 60 + aptMinutes;
-                    const [aptEndHours, aptEndMinutes] = apt.endTime.split(':').map(Number);
-                    const aptEnd = aptEndHours * 60 + aptEndMinutes;
-
-                    if ((slotStart >= aptStart && slotStart < aptEnd) || 
-                        (slotEnd > aptStart && slotEnd <= aptEnd) ||
-                        (slotStart <= aptStart && slotEnd >= aptEnd)) {
-                        return false;
-                    }
-                }
-
                 return true;
-            };
-
-            const handleBooking = async () => {
-                if (!selectedResource || !selectedService || !selectedTime) {
-                    alert('Please select a tanning bed, service, and time slot!');
+            }
+            
+            // Retry loading if dependencies fail
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            function initializeApp() {
+                if (!checkDependencies()) {
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        loadingStatus.innerHTML += `<p>Retrying (${retryCount}/${maxRetries})...</p>`;
+                        setTimeout(initializeApp, 2000);
+                    }
                     return;
                 }
+                
+                // All dependencies loaded successfully
+                startApp();
+            }
+            
+            function startApp() {
+                const { useState, useEffect } = React;
 
-                setLoading(true);
+                // Firebase Configuration
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCRiybLgwke4e38h72ElcvD5Fo_uS3eyQM",
+                    authDomain: "tanningsalon-b67a2.firebaseapp.com",
+                    projectId: "tanningsalon-b67a2",
+                    storageBucket: "tanningsalon-b67a2.firebasestorage.app",
+                    messagingSenderId: "407378831723",
+                    appId: "1:407378831723:web:2642c751f4c7c90b37042e"
+                };
 
+                // Initialize Firebase
                 try {
-                    // Find client by Firebase UID
-                    const client = clients.find(c => c.firebaseUid === user.uid);
-                    
-                    if (!client) {
-                        alert('Client record not found. Please contact support.');
-                        setLoading(false);
-                        return;
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
                     }
+                } catch (error) {
+                    console.error('Firebase initialization error:', error);
+                    loadingStatus.innerHTML = '<div class="error-message"><h2>Firebase Initialization Error</h2><p>' + error.message + '</p></div>';
+                    return;
+                }
+                
+                const db = firebase.firestore();
+                const auth = firebase.auth();
 
-                    // Calculate end time
-                    const [hours, minutes] = selectedTime.split(':').map(Number);
-                    const startMinutes = hours * 60 + minutes;
-                    const endMinutes = startMinutes + selectedService.duration;
-                    const endHours = Math.floor(endMinutes / 60);
-                    const endMins = endMinutes % 60;
-                    const endTime = `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+                // Main App Component
+                function BookingWidget() {
+                    const [user, setUser] = useState(null);
+                    const [loading, setLoading] = useState(true);
+                    const [view, setView] = useState('login');
+                    const [resources, setResources] = useState([]);
+                    const [services, setServices] = useState([]);
+                    const [appointments, setAppointments] = useState([]);
+                    const [clients, setClients] = useState([]);
 
-                    const newAppointment = {
-                        id: Date.now(),
-                        resourceId: selectedResource.id,
-                        clientId: client.id,
-                        date: selectedDate,
-                        startTime: selectedTime,
-                        endTime: endTime,
-                        service: selectedService.name,
-                        duration: selectedService.duration,
-                        price: 0, // Free appointment
-                        status: 'confirmed',
-                        notes: notes,
-                        paidWithCourse: false,
-                        courseId: null,
-                        bookingSource: 'online-widget'
+                    useEffect(() => {
+                        const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
+                            if (authUser) {
+                                if (authUser.emailVerified) {
+                                    setUser(authUser);
+                                    setView('booking');
+                                    await loadData();
+                                } else {
+                                    setUser(authUser);
+                                    setView('verifyEmail');
+                                }
+                            } else {
+                                setUser(null);
+                                setView('login');
+                            }
+                            setLoading(false);
+                        });
+
+                        return () => unsubscribe();
+                    }, []);
+
+                    const loadData = async () => {
+                        try {
+                            const [resourcesSnap, servicesSnap, appointmentsSnap, clientsSnap] = await Promise.all([
+                                db.collection('resources').get(),
+                                db.collection('services').get(),
+                                db.collection('appointments').get(),
+                                db.collection('clients').get()
+                            ]);
+
+                            setResources(resourcesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                            setServices(servicesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                            setAppointments(appointmentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                            setClients(clientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                        } catch (error) {
+                            console.error('Error loading data:', error);
+                            alert('Error loading data. Please refresh the page.');
+                        }
                     };
 
-                    await db.collection('appointments').doc(newAppointment.id.toString()).set(newAppointment);
+                    if (loading) {
+                        return (
+                            <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh'}}>
+                                <div className="spinner"></div>
+                            </div>
+                        );
+                    }
 
-                    alert('🎉 Booking Confirmed! See you soon at Sun Hut!');
-                    
-                    // Reset form
-                    setSelectedResource(null);
-                    setSelectedService(null);
-                    setSelectedTime(null);
-                    setNotes('');
-                    
-                    // Reload data
-                    await onBookingComplete();
-                } catch (error) {
-                    alert('Error creating booking: ' + error.message);
+                    return (
+                        <div className="tropical-bg" style={{minHeight: '100vh', padding: '32px 0'}}>
+                            {view === 'login' && <LoginForm setView={setView} auth={auth} />}
+                            {view === 'register' && <RegisterForm setView={setView} auth={auth} db={db} />}
+                            {view === 'verifyEmail' && <VerifyEmail user={user} setView={setView} auth={auth} />}
+                            {view === 'booking' && (
+                                <BookingForm 
+                                    user={user} 
+                                    resources={resources} 
+                                    services={services} 
+                                    appointments={appointments}
+                                    clients={clients}
+                                    setView={setView}
+                                    onUpdate={loadData}
+                                    db={db}
+                                />
+                            )}
+                            {view === 'myAppointments' && (
+                                <MyAppointments 
+                                    appointments={appointments}
+                                    resources={resources}
+                                    services={services}
+                                    user={user}
+                                    clients={clients}
+                                    onUpdate={loadData}
+                                    db={db}
+                                />
+                            )}
+
+                            {user && view !== 'verifyEmail' && (
+                                <div style={{position: 'fixed', bottom: '16px', right: '16px', display: 'flex', gap: '8px'}}>
+                                    <button
+                                        onClick={() => setView(view === 'booking' ? 'myAppointments' : 'booking')}
+                                        className="btn-yellow"
+                                        style={{padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}
+                                    >
+                                        {view === 'booking' ? '📅 My Appointments' : '🏠 Book New'}
+                                    </button>
+                                    <button
+                                        onClick={() => auth.signOut()}
+                                        style={{padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', backgroundColor: '#4B5563', color: 'white', border: 'none', cursor: 'pointer'}}
+                                    >
+                                        🚪 Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    );
                 }
 
-                setLoading(false);
-            };
+                function LoginForm({ setView, auth }) {
+                    const [email, setEmail] = useState('');
+                    const [password, setPassword] = useState('');
+                    const [loading, setLoading] = useState(false);
+                    const [error, setError] = useState('');
 
-            return (
-                <div className="max-w-6xl mx-auto">
-                    <div className="card p-8">
-                        <h2 className="text-3xl font-bold sun-hut-text-orange mb-6 text-center">
-                            Book Your Tanning Session ☀️
-                        </h2>
+                    const handleLogin = async (e) => {
+                        e.preventDefault();
+                        setError('');
+                        setLoading(true);
 
-                        {/* Step 1: Select Date */}
-                        <div className="mb-8">
-                            <h3 className="text-xl font-bold mb-4">1. Select Date</h3>
-                            <input
-                                type="date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                min={new Date().toISOString().split('T')[0]}
-                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-lg"
-                            />
-                        </div>
+                        try {
+                            await auth.signInWithEmailAndPassword(email, password);
+                        } catch (error) {
+                            setError(error.message);
+                        }
+                        setLoading(false);
+                    };
 
-                        {/* Step 2: Select Tanning Bed */}
-                        <div className="mb-8">
-                            <h3 className="text-xl font-bold mb-4">2. Select Tanning Bed</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {resources.filter(r => r.status === 'available').map(resource => (
-                                    <div
-                                        key={resource.id}
-                                        onClick={() => setSelectedResource(resource)}
-                                        className={`card p-4 cursor-pointer ${
-                                            selectedResource?.id === resource.id 
-                                                ? 'ring-4 ring-orange-500 bg-orange-50' 
-                                                : ''
-                                        }`}
-                                    >
-                                        <div className="text-2xl mb-2">🛏️</div>
-                                        <h4 className="font-bold text-lg">{resource.name}</h4>
-                                        <p className="text-gray-600 text-sm">{resource.type}</p>
-                                        <p className="text-gray-500 text-xs mt-2">{resource.description}</p>
+                    return (
+                        <div style={{maxWidth: '448px', margin: '0 auto', padding: '0 16px'}}>
+                            <div className="card" style={{padding: '32px'}}>
+                                <div style={{textAlign: 'center', marginBottom: '32px'}}>
+                                    <h1 className="sun-hut-text-orange" style={{fontSize: '36px', fontWeight: 'bold', marginBottom: '8px'}}>☀️ Sun Hut</h1>
+                                    <p style={{color: '#6B7280'}}>Book Your Perfect Tan</p>
+                                </div>
+
+                                <form onSubmit={handleLogin} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                                    <div>
+                                        <label style={{display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px'}}>Email</label>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px', fontSize: '16px'}}
+                                            required
+                                        />
                                     </div>
-                                ))}
+
+                                    <div>
+                                        <label style={{display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px'}}>Password</label>
+                                        <input
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px', fontSize: '16px'}}
+                                            required
+                                        />
+                                    </div>
+
+                                    {error && (
+                                        <div style={{backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5', color: '#991B1B', padding: '12px 16px', borderRadius: '8px'}}>
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="btn-orange"
+                                        style={{width: '100%', color: 'white', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '18px'}}
+                                    >
+                                        {loading ? 'Logging in...' : '🔓 Login'}
+                                    </button>
+                                </form>
+
+                                <div style={{marginTop: '24px', textAlign: 'center'}}>
+                                    <p style={{color: '#6B7280'}}>
+                                        Don't have an account?{' '}
+                                        <button
+                                            onClick={() => setView('register')}
+                                            className="sun-hut-text-orange"
+                                            style={{fontWeight: 'bold', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline'}}
+                                        >
+                                            Register here
+                                        </button>
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                    );
+                }
 
-                        {/* Step 3: Select Service */}
-                        {selectedResource && (
-                            <div className="mb-8">
-                                <h3 className="text-xl font-bold mb-4">3. Select Service</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {services.map(service => (
-                                        <div
-                                            key={service.id}
-                                            onClick={() => setSelectedService(service)}
-                                            className={`card p-4 cursor-pointer ${
-                                                selectedService?.id === service.id 
-                                                    ? 'ring-4 ring-orange-500 bg-orange-50' 
-                                                    : ''
-                                            }`}
+                function RegisterForm({ setView, auth, db }) {
+                    const [formData, setFormData] = useState({
+                        firstName: '',
+                        lastName: '',
+                        email: '',
+                        phone: '',
+                        password: '',
+                        confirmPassword: ''
+                    });
+                    const [loading, setLoading] = useState(false);
+                    const [error, setError] = useState('');
+
+                    const handleRegister = async (e) => {
+                        e.preventDefault();
+                        setError('');
+
+                        if (formData.password !== formData.confirmPassword) {
+                            setError('Passwords do not match');
+                            return;
+                        }
+
+                        if (formData.password.length < 6) {
+                            setError('Password must be at least 6 characters');
+                            return;
+                        }
+
+                        setLoading(true);
+
+                        try {
+                            const userCredential = await auth.createUserWithEmailAndPassword(
+                                formData.email,
+                                formData.password
+                            );
+
+                            await userCredential.user.sendEmailVerification();
+
+                            const clientsSnapshot = await db.collection('clients').get();
+                            const maxId = clientsSnapshot.docs.reduce((max, doc) => {
+                                const id = parseInt(doc.data().id) || 0;
+                                return id > max ? id : max;
+                            }, 0);
+                            const newClientId = maxId + 1;
+
+                            await db.collection('clients').doc(newClientId.toString()).set({
+                                id: newClientId,
+                                firstName: formData.firstName,
+                                lastName: formData.lastName,
+                                email: formData.email,
+                                phone: formData.phone,
+                                firebaseUid: userCredential.user.uid,
+                                createdAt: new Date().toISOString(),
+                                courses: [],
+                                redFlag: false,
+                                notes: ''
+                            });
+
+                            alert('Registration successful! Please check your email to verify your account.');
+                            setView('login');
+                        } catch (error) {
+                            setError(error.message);
+                        }
+                        setLoading(false);
+                    };
+
+                    return (
+                        <div style={{maxWidth: '448px', margin: '0 auto', padding: '0 16px'}}>
+                            <div className="card" style={{padding: '32px'}}>
+                                <div style={{textAlign: 'center', marginBottom: '32px'}}>
+                                    <h1 className="sun-hut-text-orange" style={{fontSize: '36px', fontWeight: 'bold', marginBottom: '8px'}}>☀️ Create Account</h1>
+                                    <p style={{color: '#6B7280'}}>Join Sun Hut Today</p>
+                                </div>
+
+                                <form onSubmit={handleRegister} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                                        <div>
+                                            <label style={{display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px'}}>First Name</label>
+                                            <input
+                                                type="text"
+                                                value={formData.firstName}
+                                                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                                                style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px'}}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px'}}>Last Name</label>
+                                            <input
+                                                type="text"
+                                                value={formData.lastName}
+                                                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                                                style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px'}}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label style={{display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px'}}>Email</label>
+                                        <input
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                            style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px'}}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label style={{display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px'}}>Phone</label>
+                                        <input
+                                            type="tel"
+                                            value={formData.phone}
+                                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                            style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px'}}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label style={{display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px'}}>Password</label>
+                                        <input
+                                            type="password"
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                            style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px'}}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label style={{display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px'}}>Confirm Password</label>
+                                        <input
+                                            type="password"
+                                            value={formData.confirmPassword}
+                                            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                                            style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px'}}
+                                            required
+                                        />
+                                    </div>
+
+                                    {error && (
+                                        <div style={{backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5', color: '#991B1B', padding: '12px 16px', borderRadius: '8px'}}>
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="btn-orange"
+                                        style={{width: '100%', color: 'white', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '18px'}}
+                                    >
+                                        {loading ? 'Creating Account...' : '✨ Register'}
+                                    </button>
+                                </form>
+
+                                <div style={{marginTop: '24px', textAlign: 'center'}}>
+                                    <p style={{color: '#6B7280'}}>
+                                        Already have an account?{' '}
+                                        <button
+                                            onClick={() => setView('login')}
+                                            className="sun-hut-text-orange"
+                                            style={{fontWeight: 'bold', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline'}}
                                         >
-                                            <h4 className="font-bold text-lg">{service.name}</h4>
-                                            <p className="text-gray-600 text-sm mb-2">{service.description}</p>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-700 font-semibold">
-                                                    {service.duration} mins
-                                                </span>
-                                                <span className="sun-hut-text-orange font-bold text-lg">
-                                                    FREE
-                                                </span>
+                                            Login here
+                                        </button>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+
+                function VerifyEmail({ user, setView, auth }) {
+                    const [loading, setLoading] = useState(false);
+
+                    const handleResendEmail = async () => {
+                        setLoading(true);
+                        try {
+                            await user.sendEmailVerification();
+                            alert('Verification email sent! Please check your inbox.');
+                        } catch (error) {
+                            alert('Error sending email: ' + error.message);
+                        }
+                        setLoading(false);
+                    };
+
+                    const handleCheckVerification = async () => {
+                        setLoading(true);
+                        await user.reload();
+                        if (user.emailVerified) {
+                            window.location.reload();
+                        } else {
+                            alert('Email not verified yet. Please check your inbox and click the verification link.');
+                        }
+                        setLoading(false);
+                    };
+
+                    return (
+                        <div style={{maxWidth: '448px', margin: '0 auto', padding: '0 16px'}}>
+                            <div className="card" style={{padding: '32px'}}>
+                                <div style={{textAlign: 'center', marginBottom: '32px'}}>
+                                    <div style={{fontSize: '60px', marginBottom: '16px'}}>📧</div>
+                                    <h1 className="sun-hut-text-orange" style={{fontSize: '28px', fontWeight: 'bold', marginBottom: '8px'}}>Verify Your Email</h1>
+                                    <p style={{color: '#6B7280'}}>
+                                        We've sent a verification email to:<br />
+                                        <strong>{user.email}</strong>
+                                    </p>
+                                </div>
+
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                                    <p style={{textAlign: 'center', color: '#6B7280'}}>
+                                        Please check your inbox and click the verification link to activate your account.
+                                    </p>
+
+                                    <button
+                                        onClick={handleCheckVerification}
+                                        disabled={loading}
+                                        className="btn-orange"
+                                        style={{width: '100%', color: 'white', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold'}}
+                                    >
+                                        {loading ? 'Checking...' : '✅ I\'ve Verified My Email'}
+                                    </button>
+
+                                    <button
+                                        onClick={handleResendEmail}
+                                        disabled={loading}
+                                        className="btn-yellow"
+                                        style={{width: '100%', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold'}}
+                                    >
+                                        {loading ? 'Sending...' : '📨 Resend Verification Email'}
+                                    </button>
+
+                                    <button
+                                        onClick={() => auth.signOut()}
+                                        style={{width: '100%', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', backgroundColor: '#E5E7EB', color: '#374151', border: 'none', cursor: 'pointer'}}
+                                    >
+                                        🚪 Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+
+                // I need to continue with BookingForm and MyAppointments components
+                // Due to length, I'll create a continuation...
+                
+                function BookingForm({ user, resources, services, appointments, clients, setView, onUpdate, db }) {
+                    const [selectedResource, setSelectedResource] = useState(null);
+                    const [selectedService, setSelectedService] = useState(null);
+                    const [selectedDate, setSelectedDate] = useState('');
+                    const [selectedTime, setSelectedTime] = useState('');
+                    const [notes, setNotes] = useState('');
+                    const [loading, setLoading] = useState(false);
+
+                    const client = clients.find(c => c.firebaseUid === user.uid);
+                    const activeResources = resources.filter(r => r.isActive);
+                    const activeServices = services.filter(s => s.isActive);
+
+                    const today = new Date().toISOString().split('T')[0];
+                    const maxDate = new Date();
+                    maxDate.setDate(maxDate.getDate() + 30);
+                    const maxDateStr = maxDate.toISOString().split('T')[0];
+
+                    const generateTimeSlots = () => {
+                        const slots = [];
+                        for (let hour = 9; hour <= 20; hour++) {
+                            for (let minute = 0; minute < 60; minute += 30) {
+                                const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                slots.push(timeStr);
+                            }
+                        }
+                        return slots;
+                    };
+
+                    const isTimeSlotAvailable = (time) => {
+                        if (!selectedResource || !selectedService || !selectedDate) return false;
+
+                        const [hours, minutes] = time.split(':').map(Number);
+                        const slotStart = new Date(selectedDate + 'T' + time);
+                        const slotEnd = new Date(slotStart.getTime() + selectedService.duration * 60000);
+
+                        const resourceAppointments = appointments.filter(
+                            apt => apt.resourceId === selectedResource.id && 
+                                   apt.date === selectedDate &&
+                                   apt.status !== 'cancelled'
+                        );
+
+                        for (const apt of resourceAppointments) {
+                            const aptStart = new Date(apt.date + 'T' + apt.startTime);
+                            const aptEnd = new Date(apt.date + 'T' + apt.endTime);
+
+                            if (
+                                (slotStart >= aptStart && slotStart < aptEnd) ||
+                                (slotEnd > aptStart && slotEnd <= aptEnd) ||
+                                (slotStart <= aptStart && slotEnd >= aptEnd)
+                            ) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    };
+
+                    const calculateEndTime = (startTime, duration) => {
+                        const [hours, minutes] = startTime.split(':').map(Number);
+                        const totalMinutes = hours * 60 + minutes + duration;
+                        const endHours = Math.floor(totalMinutes / 60);
+                        const endMinutes = totalMinutes % 60;
+                        return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+                    };
+
+                    const handleBooking = async () => {
+                        if (!selectedResource || !selectedService || !selectedDate || !selectedTime) {
+                            alert('Please complete all booking steps');
+                            return;
+                        }
+
+                        setLoading(true);
+
+                        try {
+                            const appointmentsSnapshot = await db.collection('appointments').get();
+                            const maxId = appointmentsSnapshot.docs.reduce((max, doc) => {
+                                const id = parseInt(doc.data().id) || 0;
+                                return id > max ? id : max;
+                            }, 0);
+                            const newAppointmentId = maxId + 1;
+
+                            const endTime = calculateEndTime(selectedTime, selectedService.duration);
+
+                            const appointmentData = {
+                                id: newAppointmentId,
+                                clientId: client.id,
+                                resourceId: selectedResource.id,
+                                service: selectedService.name,
+                                date: selectedDate,
+                                startTime: selectedTime,
+                                endTime: endTime,
+                                duration: selectedService.duration,
+                                status: 'confirmed',
+                                notes: notes,
+                                createdAt: new Date().toISOString(),
+                                createdBy: user.email
+                            };
+
+                            await db.collection('appointments').doc(newAppointmentId.toString()).set(appointmentData);
+
+                            alert('🎉 Booking confirmed! See you soon!');
+                            
+                            setSelectedResource(null);
+                            setSelectedService(null);
+                            setSelectedDate('');
+                            setSelectedTime('');
+                            setNotes('');
+                            
+                            await onUpdate();
+                        } catch (error) {
+                            alert('Error creating booking: ' + error.message);
+                        }
+                        setLoading(false);
+                    };
+
+                    return (
+                        <div style={{maxWidth: '896px', margin: '0 auto', padding: '0 16px'}}>
+                            <div className="card" style={{padding: '32px'}}>
+                                <div style={{textAlign: 'center', marginBottom: '32px'}}>
+                                    <h2 className="sun-hut-text-orange" style={{fontSize: '36px', fontWeight: 'bold', marginBottom: '8px'}}>☀️ Book Your Tan</h2>
+                                    <p style={{color: '#6B7280'}}>Welcome, {client?.firstName || user.email}!</p>
+                                </div>
+
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+                                    <div>
+                                        <h3 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '16px'}}>1. Choose Your Tanning Bed</h3>
+                                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px'}}>
+                                            {activeResources.map(resource => (
+                                                <div
+                                                    key={resource.id}
+                                                    onClick={() => setSelectedResource(resource)}
+                                                    className="card"
+                                                    style={{
+                                                        padding: '24px',
+                                                        cursor: 'pointer',
+                                                        border: selectedResource?.id === resource.id ? '2px solid #FF6B35' : '2px solid transparent'
+                                                    }}
+                                                >
+                                                    <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px'}}>
+                                                        <span style={{fontSize: '28px'}}>🛏️</span>
+                                                        <h4 style={{fontWeight: 'bold', fontSize: '18px'}}>{resource.name}</h4>
+                                                    </div>
+                                                    {resource.description && (
+                                                        <p style={{color: '#6B7280', fontSize: '14px'}}>{resource.description}</p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {selectedResource && (
+                                        <div>
+                                            <h3 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '16px'}}>2. Select Service</h3>
+                                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px'}}>
+                                                {activeServices.map(service => (
+                                                    <div
+                                                        key={service.id}
+                                                        onClick={() => setSelectedService(service)}
+                                                        className="card"
+                                                        style={{
+                                                            padding: '24px',
+                                                            cursor: 'pointer',
+                                                            border: selectedService?.id === service.id ? '2px solid #FF6B35' : '2px solid transparent'
+                                                        }}
+                                                    >
+                                                        <h4 style={{fontWeight: 'bold', fontSize: '18px', marginBottom: '8px'}}>{service.name}</h4>
+                                                        <p style={{color: '#6B7280', marginBottom: '8px'}}>{service.duration} minutes</p>
+                                                        <p className="sun-hut-text-orange" style={{fontSize: '24px', fontWeight: 'bold'}}>FREE</p>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                                    )}
 
-                        {/* Step 4: Select Time */}
-                        {selectedService && (
-                            <div className="mb-8">
-                                <h3 className="text-xl font-bold mb-4">4. Select Time</h3>
-                                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 max-h-96 overflow-y-auto p-2">
-                                    {timeSlots.map(time => {
-                                        const available = isTimeSlotAvailable(time);
-                                        return (
-                                            <div
-                                                key={time}
-                                                onClick={() => available && setSelectedTime(time)}
-                                                className={`time-slot p-3 rounded-lg text-center font-semibold ${
-                                                    selectedTime === time ? 'selected' : ''
-                                                } ${!available ? 'unavailable' : ''}`}
-                                            >
-                                                {time}
+                                    {selectedService && (
+                                        <div>
+                                            <h3 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '16px'}}>3. Pick a Date</h3>
+                                            <input
+                                                type="date"
+                                                value={selectedDate}
+                                                onChange={(e) => {
+                                                    setSelectedDate(e.target.value);
+                                                    setSelectedTime('');
+                                                }}
+                                                min={today}
+                                                max={maxDateStr}
+                                                style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px', fontSize: '18px'}}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {selectedDate && (
+                                        <div>
+                                            <h3 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '16px'}}>4. Choose a Time</h3>
+                                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px'}}>
+                                                {generateTimeSlots().map(time => {
+                                                    const available = isTimeSlotAvailable(time);
+                                                    return (
+                                                        <div
+                                                            key={time}
+                                                            onClick={() => available && setSelectedTime(time)}
+                                                            className={`time-slot ${selectedTime === time ? 'selected' : ''} ${!available ? 'unavailable' : ''}`}
+                                                        >
+                                                            {time}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                                        </div>
+                                    )}
 
-                        {/* Step 5: Notes */}
-                        {selectedTime && (
-                            <div className="mb-8">
-                                <h3 className="text-xl font-bold mb-4">5. Additional Notes (Optional)</h3>
-                                <textarea
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                    rows="3"
-                                    placeholder="Any special requests or notes..."
-                                />
-                            </div>
-                        )}
+                                    {selectedTime && (
+                                        <div>
+                                            <h3 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '16px'}}>5. Additional Notes (Optional)</h3>
+                                            <textarea
+                                                value={notes}
+                                                onChange={(e) => setNotes(e.target.value)}
+                                                style={{width: '100%', padding: '12px 16px', border: '2px solid #D1D5DB', borderRadius: '8px'}}
+                                                rows="3"
+                                                placeholder="Any special requests or notes..."
+                                            />
+                                        </div>
+                                    )}
 
-                        {/* Booking Summary & Confirm Button */}
-                        {selectedTime && (
-                            <div className="bg-orange-50 border-2 sun-hut-border-orange rounded-lg p-6">
-                                <h3 className="text-xl font-bold mb-4">Booking Summary</h3>
-                                <div className="space-y-2 mb-6">
-                                    <p><strong>Date:</strong> {selectedDate}</p>
-                                    <p><strong>Tanning Bed:</strong> {selectedResource.name}</p>
-                                    <p><strong>Service:</strong> {selectedService.name} ({selectedService.duration} mins)</p>
-                                    <p><strong>Time:</strong> {selectedTime}</p>
-                                    <p className="text-2xl font-bold sun-hut-text-orange">Price: FREE</p>
-                                </div>
-                                
-                                <button
-                                    onClick={handleBooking}
-                                    disabled={loading}
-                                    className="w-full btn-orange text-white px-6 py-4 rounded-lg font-bold text-xl"
-                                >
-                                    {loading ? 'Booking...' : '🎉 Confirm Booking'}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        // My Appointments Component
-        function MyAppointments({ appointments, resources, services, user, clients, onUpdate }) {
-            const [loading, setLoading] = useState(false);
-
-            // Get current client
-            const client = clients.find(c => c.firebaseUid === user.uid);
-            
-            // Filter appointments for current user
-            const myAppointments = appointments
-                .filter(apt => apt.clientId === client?.id)
-                .sort((a, b) => {
-                    const dateA = new Date(a.date + 'T' + a.startTime);
-                    const dateB = new Date(b.date + 'T' + b.startTime);
-                    return dateB - dateA;
-                });
-
-            const upcomingAppointments = myAppointments.filter(apt => {
-                const aptDate = new Date(apt.date + 'T' + apt.startTime);
-                return aptDate >= new Date();
-            });
-
-            const pastAppointments = myAppointments.filter(apt => {
-                const aptDate = new Date(apt.date + 'T' + apt.startTime);
-                return aptDate < new Date();
-            });
-
-            const handleCancelAppointment = async (appointmentId) => {
-                if (!confirm('Are you sure you want to cancel this appointment?')) {
-                    return;
-                }
-
-                setLoading(true);
-                try {
-                    await db.collection('appointments').doc(appointmentId.toString()).delete();
-                    alert('Appointment cancelled successfully!');
-                    await onUpdate();
-                } catch (error) {
-                    alert('Error cancelling appointment: ' + error.message);
-                }
-                setLoading(false);
-            };
-
-            const AppointmentCard = ({ appointment, isPast }) => {
-                const resource = resources.find(r => r.id === appointment.resourceId);
-                
-                return (
-                    <div className="card p-6 mb-4">
-                        <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-2xl">🛏️</span>
-                                    <h4 className="font-bold text-xl">{resource?.name || 'Unknown Bed'}</h4>
-                                </div>
-                                
-                                <div className="space-y-1 text-gray-600">
-                                    <p><strong>Service:</strong> {appointment.service}</p>
-                                    <p><strong>Date:</strong> {appointment.date}</p>
-                                    <p><strong>Time:</strong> {appointment.startTime} - {appointment.endTime}</p>
-                                    <p><strong>Duration:</strong> {appointment.duration} minutes</p>
-                                    {appointment.notes && (
-                                        <p><strong>Notes:</strong> {appointment.notes}</p>
+                                    {selectedTime && (
+                                        <div style={{backgroundColor: '#FFF7ED', border: '2px solid #FF6B35', borderRadius: '8px', padding: '24px'}}>
+                                            <h3 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '16px'}}>Booking Summary</h3>
+                                            <div style={{marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                                                <p><strong>Date:</strong> {selectedDate}</p>
+                                                <p><strong>Tanning Bed:</strong> {selectedResource.name}</p>
+                                                <p><strong>Service:</strong> {selectedService.name} ({selectedService.duration} mins)</p>
+                                                <p><strong>Time:</strong> {selectedTime}</p>
+                                                <p className="sun-hut-text-orange" style={{fontSize: '24px', fontWeight: 'bold'}}>Price: FREE</p>
+                                            </div>
+                                            
+                                            <button
+                                                onClick={handleBooking}
+                                                disabled={loading}
+                                                className="btn-orange"
+                                                style={{width: '100%', color: 'white', padding: '16px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '20px'}}
+                                            >
+                                                {loading ? 'Booking...' : '🎉 Confirm Booking'}
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
-                                
-                                <div className="mt-3">
-                                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                                        appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                        appointment.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-gray-100 text-gray-800'
-                                    }`}>
-                                        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                                    </span>
+                            </div>
+                        </div>
+                    );
+                }
+
+                function MyAppointments({ appointments, resources, services, user, clients, onUpdate, db }) {
+                    const [loading, setLoading] = useState(false);
+
+                    const client = clients.find(c => c.firebaseUid === user.uid);
+                    
+                    const myAppointments = appointments
+                        .filter(apt => apt.clientId === client?.id)
+                        .sort((a, b) => {
+                            const dateA = new Date(a.date + 'T' + a.startTime);
+                            const dateB = new Date(b.date + 'T' + b.startTime);
+                            return dateB - dateA;
+                        });
+
+                    const upcomingAppointments = myAppointments.filter(apt => {
+                        const aptDate = new Date(apt.date + 'T' + apt.startTime);
+                        return aptDate >= new Date();
+                    });
+
+                    const pastAppointments = myAppointments.filter(apt => {
+                        const aptDate = new Date(apt.date + 'T' + apt.startTime);
+                        return aptDate < new Date();
+                    });
+
+                    const handleCancelAppointment = async (appointmentId) => {
+                        if (!confirm('Are you sure you want to cancel this appointment?')) {
+                            return;
+                        }
+
+                        setLoading(true);
+                        try {
+                            await db.collection('appointments').doc(appointmentId.toString()).delete();
+                            alert('Appointment cancelled successfully!');
+                            await onUpdate();
+                        } catch (error) {
+                            alert('Error cancelling appointment: ' + error.message);
+                        }
+                        setLoading(false);
+                    };
+
+                    const AppointmentCard = ({ appointment, isPast }) => {
+                        const resource = resources.find(r => r.id === appointment.resourceId);
+                        
+                        return (
+                            <div className="card" style={{padding: '24px', marginBottom: '16px'}}>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                                    <div style={{flex: 1}}>
+                                        <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px'}}>
+                                            <span style={{fontSize: '24px'}}>🛏️</span>
+                                            <h4 style={{fontWeight: 'bold', fontSize: '20px'}}>{resource?.name || 'Unknown Bed'}</h4>
+                                        </div>
+                                        
+                                        <div style={{color: '#6B7280', display: 'flex', flexDirection: 'column', gap: '4px'}}>
+                                            <p><strong>Service:</strong> {appointment.service}</p>
+                                            <p><strong>Date:</strong> {appointment.date}</p>
+                                            <p><strong>Time:</strong> {appointment.startTime} - {appointment.endTime}</p>
+                                            <p><strong>Duration:</strong> {appointment.duration} minutes</p>
+                                            {appointment.notes && (
+                                                <p><strong>Notes:</strong> {appointment.notes}</p>
+                                            )}
+                                        </div>
+                                        
+                                        <div style={{marginTop: '12px'}}>
+                                            <span style={{
+                                                display: 'inline-block',
+                                                padding: '4px 12px',
+                                                borderRadius: '9999px',
+                                                fontSize: '14px',
+                                                fontWeight: '600',
+                                                backgroundColor: appointment.status === 'confirmed' ? '#D1FAE5' : appointment.status === 'completed' ? '#DBEAFE' : '#F3F4F6',
+                                                color: appointment.status === 'confirmed' ? '#065F46' : appointment.status === 'completed' ? '#1E40AF' : '#374151'
+                                            }}>
+                                                {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    {!isPast && (
+                                        <button
+                                            onClick={() => handleCancelAppointment(appointment.id)}
+                                            disabled={loading}
+                                            style={{
+                                                marginLeft: '16px',
+                                                padding: '8px 16px',
+                                                backgroundColor: '#DC2626',
+                                                color: 'white',
+                                                borderRadius: '8px',
+                                                fontWeight: '600',
+                                                border: 'none',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                            
-                            {!isPast && (
-                                <button
-                                    onClick={() => handleCancelAppointment(appointment.id)}
-                                    disabled={loading}
-                                    className="ml-4 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-                                >
-                                    Cancel
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                );
-            };
+                        );
+                    };
 
-            return (
-                <div className="max-w-4xl mx-auto">
-                    <div className="card p-8">
-                        <h2 className="text-3xl font-bold sun-hut-text-orange mb-6 text-center">
-                            My Appointments 📅
-                        </h2>
+                    return (
+                        <div style={{maxWidth: '896px', margin: '0 auto', padding: '0 16px'}}>
+                            <div className="card" style={{padding: '32px'}}>
+                                <h2 className="sun-hut-text-orange" style={{fontSize: '32px', fontWeight: 'bold', marginBottom: '24px', textAlign: 'center'}}>
+                                    My Appointments 📅
+                                </h2>
 
-                        {/* Upcoming Appointments */}
-                        <div className="mb-8">
-                            <h3 className="text-2xl font-bold mb-4">Upcoming Appointments</h3>
-                            {upcomingAppointments.length === 0 ? (
-                                <div className="text-center py-8 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-600 text-lg mb-4">No upcoming appointments</p>
-                                    <p className="text-gray-500">Book your next tan now!</p>
+                                <div style={{marginBottom: '32px'}}>
+                                    <h3 style={{fontSize: '24px', fontWeight: 'bold', marginBottom: '16px'}}>Upcoming Appointments</h3>
+                                    {upcomingAppointments.length === 0 ? (
+                                        <div style={{textAlign: 'center', padding: '32px 0', backgroundColor: '#F9FAFB', borderRadius: '8px'}}>
+                                            <p style={{color: '#6B7280', fontSize: '18px', marginBottom: '16px'}}>No upcoming appointments</p>
+                                            <p style={{color: '#9CA3AF'}}>Book your next tan now!</p>
+                                        </div>
+                                    ) : (
+                                        upcomingAppointments.map(apt => (
+                                            <AppointmentCard key={apt.id} appointment={apt} isPast={false} />
+                                        ))
+                                    )}
                                 </div>
-                            ) : (
-                                upcomingAppointments.map(apt => (
-                                    <AppointmentCard key={apt.id} appointment={apt} isPast={false} />
-                                ))
-                            )}
-                        </div>
 
-                        {/* Past Appointments */}
-                        {pastAppointments.length > 0 && (
-                            <div>
-                                <h3 className="text-2xl font-bold mb-4">Past Appointments</h3>
-                                {pastAppointments.slice(0, 5).map(apt => (
-                                    <AppointmentCard key={apt.id} appointment={apt} isPast={true} />
-                                ))}
+                                {pastAppointments.length > 0 && (
+                                    <div>
+                                        <h3 style={{fontSize: '24px', fontWeight: 'bold', marginBottom: '16px'}}>Past Appointments</h3>
+                                        {pastAppointments.slice(0, 5).map(apt => (
+                                            <AppointmentCard key={apt.id} appointment={apt} isPast={true} />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
+                        </div>
+                    );
+                }
 
-        // Render the app
-        ReactDOM.render(<BookingWidget />, document.getElementById('root'));
+                // Render the app
+                try {
+                    ReactDOM.render(<BookingWidget />, document.getElementById('root'));
+                    console.log('App initialized successfully!');
+                } catch (error) {
+                    console.error('Error rendering app:', error);
+                    document.getElementById('root').innerHTML = '<div class="error-message"><h2>Rendering Error</h2><p>' + error.message + '</p></div>';
+                }
+            }
+            
+            // Initialize when page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeApp);
+            } else {
+                initializeApp();
+            }
+        })();
     </script>
 </body>
 </html>
